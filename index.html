@@ -89,8 +89,9 @@
                     <div class="bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
                         <p class="text-sm font-bold text-blue-700"><span id="count-murid">0</span> Murid Dipaparkan</p>
                     </div>
+                    <!-- Updated Button Text to "Simpan dan Hantar" -->
                     <button onclick="saveRecords()" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transform hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">
-                        <span>💾 Simpan Semua Rekod</span>
+                        <span>🚀 Simpan dan Hantar</span>
                     </button>
                 </div>
                 
@@ -412,7 +413,7 @@
             if (!sk) return showToast("⚠️ Sila Pilih Standard Kandungan", "bg-amber-500 text-white");
             if (RECORD_DATA.length === 0) return showToast("⚠️ Sila Berikan TP Kepada Murid", "bg-amber-500 text-white");
 
-            showToast("⏳ Menyimpan Ke Google Sheets...", "bg-blue-600 text-white");
+            showToast("⏳ Menghantar Ke Google Sheets...", "bg-blue-600 text-white");
 
             try {
                 await fetch(scriptURL, {
@@ -422,7 +423,7 @@
                     headers: { 'Content-Type': 'application/json' }
                 });
 
-                showToast("✅ Berjaya Simpan Ke Cloud!", "bg-emerald-600 text-white");
+                showToast("✅ Berjaya Dihantar Ke Cloud!", "bg-emerald-600 text-white");
                 updateAnalisis();
             } catch (err) {
                 showToast("❌ Ralat Sambungan Server", "bg-red-600 text-white");
