@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEM PEREKODAN PBD - SMK AYER KEROH</title>
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF & AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f4f8; }
+        .glass-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
+        .tp-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tp-selected { transform: scale(1.15); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-color: #1e3a8a !important; filter: brightness(1.1); }
+        .tab-btn.active { background-color: #1e3a8a; color: white; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+
+    <!-- HEADER SECTION -->
+    <header class="bg-white border-b shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <!-- Logo Updated to https://i.postimg.cc/0jL0tPVw/image.png -->
+                <img src="https://i.postimg.cc/0jL0tPVw/image.png" alt="Logo SMK Ayer Keroh" class="h-16 w-auto">
+                <div>
+                    <h1 class="font-bold text-xl text-blue-900 tracking-tight">SMK AYER KEROH, MELAKA</h1>
+                    <p class="text-[10px] md:text-xs text-blue-600 font-medium tracking-widest uppercase">75450, Ayer Keroh, Melaka</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex gap-2">
+                <button onclick="switchTab('borang')" class="tab-btn active px-5 py-2 rounded-full text-sm font-semibold transition-all hover:bg-gray-100">📝 Borang Rekod</button>
+                <button onclick="switchTab('auth')" class="tab-btn px-5 py-2 rounded-full text-sm font-semibold transition-all hover:bg-gray-100">📊 Analisis PBD</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- TAB 1: BORANG REKOD PBD -->
+        <section id="tab-borang" class="tab-content animate-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-extrabold text-blue-900 mb-2">Borang Rekod PBD 📝</h2>
+                <div class="h-1 w-20 bg-blue-600 rounded-full"></div>
+            </div>
+
+            <!-- Configuration Card -->
+            <div class="glass-card p-6 rounded-3xl shadow-xl mb-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase ml-1">📅 Tarikh</label>
+                    <input type="date" id="input-tarikh" onchange="updateDay()" class="w-full p-3 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none transition-all">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase ml-1">🗓️ Hari</label>
+                    <input type="text" id="input-hari" readonly class="w-full p-3 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-400 font-medium">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase ml-1">⏰ Masa</label>
+                    <input type="time" id="input-masa" class="w-full p-3 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none transition-all">
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase ml-1">🏫 Kelas</label>
+                    <select id="select-kelas" onchange="renderStudentList()" class="w-full p-3 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none transition-all font-semibold">
+                        <option value="">-- Pilih Kelas --</option>
+                        <option value="1 DELTA">1 DELTA</option>
+                        <option value="1 OMEGA">1 OMEGA</option>
+                    </select>
+                </div>
+                <div class="md:col-span-4 space-y-1">
+                    <label class="block text-xs font-bold text-gray-500 uppercase ml-1">📘 Standard Kandungan</label>
+                    <select id="select-sk" class="w-full p-3 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none transition-all">
+                        <option value="">-- Pilih Standard Kandungan --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Student List Section -->
+            <div id="student-list-container" class="hidden animate-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+                        <p class="text-sm font-bold text-blue-700"><span id="count-murid">0</span> Murid Dipaparkan</p>
+                    </div>
+                    <button onclick="saveRecords()" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transform hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">
+                        <span>💾 Simpan Semua Rekod</span>
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-blue-900 text-white">
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider w-16">Bil</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Nama Penuh Murid</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Tahap Penguasaan (TP)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-students" class="divide-y divide-gray-100">
+                            <!-- JS Inject -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="empty-state" class="text-center py-24 glass-card rounded-3xl mt-8">
+                <div class="text-7xl mb-6">🔍</div>
+                <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-widest">Sila Pilih Kelas Dahulu</h3>
+            </div>
+        </section>
+
+        <!-- TAB 2: AUTHENTICATION -->
+        <section id="tab-auth" class="tab-content hidden animate-in">
+            <div class="max-w-md mx-auto mt-20 p-10 glass-card rounded-[2.5rem] shadow-2xl text-center">
+                <div class="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🔐</span>
+                </div>
+                <h2 class="text-2xl font-black text-blue-900 mb-2 uppercase tracking-tight">Akses Dashboard</h2>
+                <p class="text-gray-400 text-sm mb-8">Masukkan kata laluan untuk melihat analisis PBD</p>
+                <input type="password" id="pass-field" placeholder="••••••••" class="w-full p-4 border-2 border-gray-100 rounded-2xl mb-4 text-center text-xl tracking-[0.5em] focus:border-blue-500 outline-none transition-all">
+                <button onclick="verifyPassword()" class="w-full bg-blue-900 text-white py-4 rounded-2xl font-black text-sm tracking-widest hover:bg-blue-800 transition shadow-xl">LOG MASUK</button>
+            </div>
+        </section>
+
+        <!-- TAB 3: DASHBOARD ANALISIS -->
+        <section id="tab-dashboard" class="tab-content hidden animate-in">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+                <div>
+                    <h2 class="text-4xl font-black text-blue-900 uppercase">ANALISIS PBD 📊</h2>
+                    <div class="h-1.5 w-32 bg-blue-600 rounded-full mt-2"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="showAddModal()" class="bg-white text-blue-900 border-2 border-blue-900 px-6 py-3 rounded-2xl text-sm font-black hover:bg-blue-50 transition active:scale-95">➕ TAMBAH MURID</button>
+                    <button onclick="generatePDFReport()" class="bg-red-600 text-white px-6 py-3 rounded-2xl text-sm font-black shadow-xl hover:bg-red-700 transition active:scale-95">📄 PRINT PDF</button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                <div class="bg-white p-8 rounded-[2rem] shadow-lg border-b-8 border-blue-600">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Jumlah Keseluruhan Rekod</p>
+                    <h4 class="text-5xl font-black text-blue-900" id="stat-total">0</h4>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-lg border-b-8 border-emerald-500">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Purata Tahap Penguasaan</p>
+                    <h4 class="text-5xl font-black text-emerald-600" id="stat-avg">0.0</h4>
+                </div>
+                <div class="bg-white p-8 rounded-[2rem] shadow-lg border-b-8 border-amber-400">
+                    <p class="text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Kelas Berdaftar</p>
+                    <h4 class="text-5xl font-black text-amber-600">2</h4>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+                <!-- Chart Area -->
+                <div class="lg:col-span-3 bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+                    <h3 class="font-black text-blue-900 uppercase text-lg mb-6">Taburan Pencapaian (TP)</h3>
+                    <canvas id="chartTP" height="180"></canvas>
+                </div>
+                <!-- Table Area -->
+                <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-black text-blue-900 uppercase text-lg tracking-tighter">Senarai Semak</h3>
+                        <select id="filter-kelas-analisis" onchange="updateAnalisis()" class="text-xs font-bold border-2 rounded-xl px-3 py-1.5 bg-gray-50">
+                            <option value="1 DELTA">1 DELTA</option>
+                            <option value="1 OMEGA">1 OMEGA</option>
+                        </select>
+                    </div>
+                    <div class="overflow-y-auto max-h-[400px]">
+                        <table class="w-full text-sm">
+                            <thead class="sticky top-0 bg-white">
+                                <tr class="text-gray-400 border-b">
+                                    <th class="py-3 text-left font-bold uppercase text-[10px]">Murid</th>
+                                    <th class="py-3 text-center font-bold uppercase text-[10px]">TP</th>
+                                    <th class="py-3 text-right font-bold uppercase text-[10px]">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analisis-table-body" class="divide-y divide-gray-50">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Tambah Murid -->
+    <div id="modal-murid" class="fixed inset-0 bg-blue-900/40 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-in">
+            <h3 class="text-2xl font-black text-blue-900 mb-6 uppercase tracking-tight">Tambah Murid Baru</h3>
+            <div class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Nama Penuh</label>
+                    <input type="text" id="new-name" placeholder="CONTOH: AHMAD BIN ALI" class="w-full p-4 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none uppercase font-bold">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Kelas</label>
+                    <select id="new-kelas" class="w-full p-4 border-2 border-gray-100 rounded-2xl focus:border-blue-500 outline-none font-bold">
+                        <option value="1 DELTA">1 DELTA</option>
+                        <option value="1 OMEGA">1 OMEGA</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 mt-8">
+                    <button onclick="closeModal()" class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold hover:bg-gray-200 transition">BATAL</button>
+                    <button onclick="addStudent()" class="flex-1 py-4 bg-blue-900 text-white rounded-2xl font-black hover:bg-blue-800 transition shadow-lg">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 transform translate-y-24 opacity-0 px-8 py-4 rounded-2xl shadow-2xl transition-all duration-500 z-[100] font-bold text-sm flex items-center gap-3">
+        <span></span>
+    </div>
+
+    <script>
+        // INTEGRASI URL
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbwHMwyCtove_qQHRfmRKRNBgCLEk5ZwJvW9taRTALOUlHiDEOgAhxqY62Wd0FxXFega/exec';
+
+        // DATA KANDUNGAN
+        const STANDARD_KANDUNGAN = [
+            "1.1 Integer", "1.2 Operasi Asas Aritmetik Yang Melibatkan Integer", 
+            "1.3 Pecahan positif dan pecahan negatif", "1.4 Perpuluhan positif dan perpuluhan negatif",
+            "1.5 Nombor nisbah", "2.1 Faktor, faktor perdana dan FSTB",
+            "2.2 Gandaan, gandaan sepunya dan GSTK", "3.1 Kuasa Dua dan Punca Kuasa Dua",
+            "3.2 Kuasa Tiga dan Punca Kuasa Tiga", "4.1 Nisbah", "4.2 Kadar", "4.3 Kadaran",
+            "4.4 Nisbah, kadar dan kadaran", "4.5 Perkaitan antara nisbah, kadar dan kadaran",
+            "5.1 Pemboleh ubah dan ungkapan algebra", "5.2 Ungkapan algebra yang melibatkan operasi asas",
+            "6.1 Persamaan linear dalam satu pemboleh ubah", "6.2 Persamaan linear dalam dua pemboleh ubah",
+            "6.3 Persamaan linear serentak", "7.1 Ketaksamaan", "7.2 Ketaksamaan linear",
+            "8.1 Garis dan sudut", "8.2 Sudut berkaitan garis bersilang", "8.3 Sudut berkaitan garis selari",
+            "9.1 Poligon", "9.2 Sifat segi tiga", "9.3 Sifat sisi empat"
+        ];
+
+        let STUDENTS = [
+            { id: 1, nama: "ABDUL NOR DAYYAN BIN ABDUL SHAFIQ", kelas: "1 DELTA" },
+            { id: 2, nama: "ADAM NAUFAL BIN MOHD SHAHRON", kelas: "1 DELTA" },
+            { id: 3, nama: "AHMAD DANIAL FIKRI BIN ROSLAN", kelas: "1 DELTA" },
+            { id: 4, nama: "ALIA NUR ZAHRA BINTI ABDUL RAHIM", kelas: "1 DELTA" },
+            { id: 5, nama: "AQIL ZHAFFRAN BIN AFFIZUDDIN NOR", kelas: "1 DELTA" },
+            { id: 6, nama: "AZZARD IKHWAN BIN AZMI", kelas: "1 DELTA" },
+            { id: 7, nama: "DHIA SOFEA BINTI BADRULHISHAM", kelas: "1 DELTA" },
+            { id: 8, nama: "DHIA ZARA ALISHA BINTI MOHAMAD FADZIL", kelas: "1 DELTA" },
+            { id: 9, nama: "HANA INARAH BINTI ABU HANIFAH", kelas: "1 DELTA" },
+            { id: 10, nama: "HARRAZ RIZQI BIN MUSTAFA", kelas: "1 DELTA" },
+            { id: 11, nama: "MUHAMAD HAKIM BIN MOHD RIDUAN", kelas: "1 DELTA" },
+            { id: 12, nama: "MUHAMMAD ALIFF HILMAN BIN ABDUL HAKIM", kelas: "1 DELTA" },
+            { id: 13, nama: "MUHAMMAD FIRASH ZIQRI BIN MOHD FAIDZAL", kelas: "1 DELTA" },
+            { id: 14, nama: "MUHAMMAD HAIKAL BIN NAZRI", kelas: "1 DELTA" },
+            { id: 15, nama: "MUHAMMAD QAYYUM ARRAYYAN BIN MOHD IQMALLULLAIL", kelas: "1 DELTA" },
+            { id: 16, nama: "MUHAMMAD SYAKER NAJMIE BIN NOHZIE NORAMIN", kelas: "1 DELTA" },
+            { id: 17, nama: "MUHAMMAD SYAZWI IZZ BIN FAIZAUL", kelas: "1 DELTA" },
+            { id: 18, nama: "ALEEYSA ADRIYANA", kelas: "1 OMEGA" },
+            { id: 19, nama: "ALYSA MASTURA BINTI FARUL RAFIQ", kelas: "1 OMEGA" },
+            { id: 20, nama: "AQMAR HANANI BINTI HAZRIL", kelas: "1 OMEGA" },
+            { id: 21, nama: "ARISSA QAISARA BINTI MUHAMMAD RASHDAN", kelas: "1 OMEGA" },
+            { id: 22, nama: "AZRI ZAMRIZAN BIN ABDULLAH", kelas: "1 OMEGA" },
+            { id: 23, nama: "CLARICES MIA ANAK LOCUS", kelas: "1 OMEGA" },
+            { id: 24, nama: "DANISH AISAR BIN ABD RAHMAN", kelas: "1 OMEGA" },
+            { id: 25, nama: "DIVYADARSHINI A/P PALANI VELOO", kelas: "1 OMEGA" },
+            { id: 26, nama: "HARIS RASYAD BIN MOHD FIRDAUS", kelas: "1 OMEGA" },
+            { id: 27, nama: "KUGANESH A/L NANASAGARAN", kelas: "1 OMEGA" },
+            { id: 28, nama: "LUCAS TAN RAY XUAN", kelas: "1 OMEGA" },
+            { id: 29, nama: "MOHAMMAD FIQRY BIN SURHARDE", kelas: "1 OMEGA" },
+            { id: 30, nama: "MUHAMMAD ADAM FARIS BIN EARWIN", kelas: "1 OMEGA" },
+            { id: 31, nama: "MUHAMMAD AFIQ HAFIZ BIN MOHD HAFIZI", kelas: "1 OMEGA" },
+            { id: 32, nama: "MUHAMMAD AQIL BIN ASSARIZAM", kelas: "1 OMEGA" }
+        ];
+
+        let RECORD_DATA = []; 
+        let chartInstance = null;
+
+        window.onload = () => {
+            populateSK();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('input-tarikh').value = today;
+            updateDay();
+        };
+
+        function populateSK() {
+            const select = document.getElementById('select-sk');
+            STANDARD_KANDUNGAN.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateDay() {
+            const dateInput = document.getElementById('input-tarikh').value;
+            if (dateInput) {
+                const date = new Date(dateInput);
+                const options = { weekday: 'long' };
+                document.getElementById('input-hari').value = new Intl.DateTimeFormat('ms-MY', options).format(date);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            if (tab === 'borang') {
+                document.getElementById('tab-borang').classList.remove('hidden');
+                document.querySelector('[onclick="switchTab(\'borang\')"]').classList.add('active');
+            } else if (tab === 'auth') {
+                document.getElementById('tab-auth').classList.remove('hidden');
+                document.querySelector('[onclick="switchTab(\'auth\')"]').classList.add('active');
+            } else if (tab === 'dashboard') {
+                document.getElementById('tab-dashboard').classList.remove('hidden');
+            }
+        }
+
+        function verifyPassword() {
+            const pass = document.getElementById('pass-field').value;
+            if (pass === 'mea2100') {
+                switchTab('dashboard');
+                updateAnalisis();
+                showToast("🔓 Akses Dashboard Dibenarkan", "bg-emerald-500 text-white");
+            } else {
+                showToast("❌ Kata Laluan Tidak Tepat", "bg-red-500 text-white");
+            }
+        }
+
+        function renderStudentList() {
+            const kelas = document.getElementById('select-kelas').value;
+            const container = document.getElementById('student-list-container');
+            const empty = document.getElementById('empty-state');
+            const tbody = document.getElementById('table-students');
+
+            if (!kelas) {
+                container.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            empty.classList.add('hidden');
+            tbody.innerHTML = '';
+
+            const filtered = STUDENTS.filter(s => s.kelas === kelas);
+            document.getElementById('count-murid').textContent = filtered.length;
+
+            filtered.forEach((s, index) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-blue-50 transition-colors group";
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-xs font-bold text-gray-400">${index + 1}</td>
+                    <td class="px-6 py-4 font-bold text-gray-700 text-sm">${s.nama}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex justify-center gap-1.5 md:gap-3">
+                            ${[1,2,3,4,5,6].map(tp => `
+                                <button onclick="setTP(${s.id}, ${tp}, this)" 
+                                    class="tp-btn w-10 h-10 rounded-xl border-2 border-transparent flex items-center justify-center text-sm font-black text-white
+                                    ${getTPColor(tp)} opacity-20 hover:opacity-100 hover:scale-110"
+                                    data-sid="${s.id}" data-tp="${tp}">
+                                    ${tp}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getTPColor(tp) {
+            const colors = ['', 'bg-red-500', 'bg-orange-500', 'bg-amber-400', 'bg-lime-500', 'bg-emerald-500', 'bg-blue-600'];
+            return colors[tp];
+        }
+
+        function setTP(studentId, tpValue, btn) {
+            const rowBtns = document.querySelectorAll(`button[data-sid="${studentId}"]`);
+            rowBtns.forEach(b => {
+                b.classList.remove('tp-selected', 'opacity-100');
+                b.classList.add('opacity-20');
+            });
+
+            btn.classList.add('tp-selected', 'opacity-100');
+            btn.classList.remove('opacity-20');
+            
+            const student = STUDENTS.find(s => s.id === studentId);
+            const sk = document.getElementById('select-sk').value;
+            
+            const existing = RECORD_DATA.findIndex(r => r.studentId === studentId && r.sk === sk);
+            
+            const newRecord = {
+                studentId: student.id,
+                nama: student.nama,
+                kelas: student.kelas,
+                tp: tpValue,
+                sk: sk || "Unit 1",
+                tarikh: document.getElementById('input-tarikh').value,
+                masa: document.getElementById('input-masa').value
+            };
+
+            if (existing > -1) RECORD_DATA[existing] = newRecord;
+            else RECORD_DATA.push(newRecord);
+        }
+
+        async function saveRecords() {
+            const sk = document.getElementById('select-sk').value;
+            if (!sk) return showToast("⚠️ Sila Pilih Standard Kandungan", "bg-amber-500 text-white");
+            if (RECORD_DATA.length === 0) return showToast("⚠️ Sila Berikan TP Kepada Murid", "bg-amber-500 text-white");
+
+            showToast("⏳ Menyimpan Ke Google Sheets...", "bg-blue-600 text-white");
+
+            try {
+                await fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(RECORD_DATA),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                showToast("✅ Berjaya Simpan Ke Cloud!", "bg-emerald-600 text-white");
+                updateAnalisis();
+            } catch (err) {
+                showToast("❌ Ralat Sambungan Server", "bg-red-600 text-white");
+                console.error(err);
+            }
+        }
+
+        function updateAnalisis() {
+            const kelas = document.getElementById('filter-kelas-analisis').value;
+            const records = RECORD_DATA.filter(r => r.kelas === kelas);
+            
+            document.getElementById('stat-total').textContent = RECORD_DATA.length;
+            
+            const sum = records.reduce((acc, curr) => acc + curr.tp, 0);
+            document.getElementById('stat-avg').textContent = records.length ? (sum / records.length).toFixed(1) : '0.0';
+
+            const tbody = document.getElementById('analisis-table-body');
+            tbody.innerHTML = '';
+            records.forEach(r => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-gray-50";
+                row.innerHTML = `
+                    <td class="py-3 font-bold text-gray-600 text-[11px] uppercase">${r.nama}</td>
+                    <td class="py-3 text-center"><span class="px-3 py-1 rounded-lg ${getTPColor(r.tp)} text-white font-black text-xs">TP${r.tp}</span></td>
+                    <td class="py-3 text-right">
+                        <button onclick="deleteRecord('${r.nama}')" class="text-gray-300 hover:text-red-500 transition-colors">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const counts = [0, 0, 0, 0, 0, 0];
+            records.forEach(r => counts[r.tp-1]++);
+            
+            const ctx = document.getElementById('chartTP').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6'],
+                    datasets: [{
+                        label: 'Bilangan Murid',
+                        data: counts,
+                        backgroundColor: ['#ef4444', '#f97316', '#fbbf24', '#84cc16', '#10b981', '#2563eb'],
+                        borderRadius: 12
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        function showAddModal() { document.getElementById('modal-murid').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal-murid').classList.add('hidden'); }
+
+        function addStudent() {
+            const nama = document.getElementById('new-name').value;
+            const kelas = document.getElementById('new-kelas').value;
+            if (!nama) return showToast("⚠️ Masukkan Nama Murid", "bg-red-400 text-white");
+            
+            const newId = Date.now();
+            STUDENTS.push({ id: newId, nama: nama.toUpperCase(), kelas: kelas });
+            showToast("👤 Murid Berjaya Ditambah", "bg-blue-600 text-white");
+            closeModal();
+            renderStudentList();
+        }
+
+        function deleteRecord(name) {
+            RECORD_DATA = RECORD_DATA.filter(r => r.nama !== name);
+            updateAnalisis();
+            showToast("🗑️ Rekod Tempatan Dipadam", "bg-gray-800 text-white");
+        }
+
+        function generatePDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const kelas = document.getElementById('filter-kelas-analisis').value;
+            const sk = document.getElementById('select-sk').value || "SISTEM PEREKODAN PBD";
+            const date = new Date().toLocaleDateString('ms-MY');
+
+            // HEADER
+            doc.addImage('https://i.postimg.cc/0jL0tPVw/image.png', 'PNG', 15, 12, 18, 18);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(30, 58, 138);
+            doc.text('SEKOLAH MENENGAH KEBANGSAAN AYER KEROH', 38, 20);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text('PEREKODAN PBD MATEMATIK', 38, 26);
+            
+            doc.setDrawColor(200);
+            doc.line(15, 35, 195, 35);
+
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`KANDUNGAN: ${sk}`, 15, 45);
+            doc.text(`KELAS: ${kelas}`, 15, 51);
+            doc.text(`TARIKH JANA: ${date}`, 150, 45);
+
+            const data = RECORD_DATA.filter(r => r.kelas === kelas).map((r, i) => [
+                i + 1, r.nama, r.kelas, `TP ${r.tp}`
+            ]);
+
+            doc.autoTable({
+                startY: 60,
+                head: [['Bil', 'Nama Murid', 'Kelas', 'TP']],
+                body: data,
+                headStyles: { fillColor: [30, 58, 138], halign: 'center' },
+                columnStyles: { 0: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center', fontStyle: 'bold' } },
+                styles: { font: 'helvetica', fontSize: 9 },
+                theme: 'striped'
+            });
+
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Dijana oleh Sistem Perekodan PBD SMK Ayer Keroh', 105, 285, { align: 'center' });
+
+            doc.save(`REKOD_PBD_${kelas}_${sk}.pdf`);
+            showToast("📄 Laporan PDF Telah Jana", "bg-red-600 text-white");
+        }
+
+        function showToast(msg, colorClass) {
+            const toast = document.getElementById('toast');
+            toast.querySelector('span').textContent = msg;
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 transform translate-y-0 opacity-100 ${colorClass} px-8 py-4 rounded-2xl shadow-2xl transition-all duration-500 z-[100] font-bold text-sm flex items-center gap-3`;
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
