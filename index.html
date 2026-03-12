@@ -214,12 +214,13 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 transform translate-y-24 opacity-0 px-8 py-4 rounded-2xl shadow-2xl transition-all duration-500 z-[100] font-bold text-sm flex items-center gap-3">
         <span></span>
     </div>
 
     <script>
+        // PENGESAHAN SAMBUNGAN APPS SCRIPT
         const scriptURL = 'https://script.google.com/macros/s/AKfycbwHMwyCtove_qQHRfmRKRNBgCLEk5ZwJvW9taRTALOUlHiDEOgAhxqY62Wd0FxXFega/exec';
 
         const STANDARD_KANDUNGAN = [
@@ -238,7 +239,7 @@
             "9.1 Poligon", "9.2 Sifat segi tiga", "9.3 Sifat sisi empat"
         ];
 
-        // SENARAI LENGKAP MURID (35 DELTA, 37 OMEGA)
+        // SENARAI MURID LENGKAP (35 DELTA, 37 OMEGA)
         let STUDENTS = [
             // 1 DELTA (35 ORANG)
             { id: 1, nama: "ABDUL NOR DAYYAN BIN ABDUL SHAFIQ", kelas: "1 DELTA" },
@@ -454,9 +455,10 @@
             if (!sk) return showToast("⚠️ Sila Pilih Standard Kandungan", "bg-amber-500 text-white");
             if (RECORD_DATA.length === 0) return showToast("⚠️ Sila Berikan TP Kepada Murid", "bg-amber-500 text-white");
 
-            showToast("⏳ Menghantar Ke Google Sheets...", "bg-blue-600 text-white");
+            showToast("⏳ Menghantar Ke Cloud...", "bg-blue-600 text-white");
 
             try {
+                // Menghantar data ke Google Apps Script URL
                 await fetch(scriptURL, {
                     method: 'POST',
                     mode: 'no-cors',
